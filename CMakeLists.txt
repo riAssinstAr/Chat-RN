@@ -1,10 +1,18 @@
 cmake_minimum_required(VERSION 3.10)
-project(tcp_chat_app C)
+project(chatrn C)
 
 set(CMAKE_C_STANDARD 99)
 
-# Build the server
-add_executable(server server.c)
+add_executable(chatrn
+    main.c
+    config.c
+    server.c
+    client.c
+    pending.c
+    chatsession.c
+)
 
-# Build the client
-add_executable(client client.c)
+# Add pthread if you're using threads
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+target_link_libraries(chatrn PRIVATE Threads::Threads)
