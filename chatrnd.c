@@ -3,18 +3,47 @@
 #include <string.h>
 #include <pthread.h>
 #include <unistd.h>
-#include "chatrn.h"
+#include <signal.h>
+#include "ipc.h"
+#include "server/server.h"
+#include "include/common.h"
 
-int main()
+void handle_signal(int sig)
 {
-    if (daemon(0, 0) < 0)
-    {
-        perror("chatrnd: failed to daemonize");
-        exit(EXIT_FAILURE);
-    }
+    ipc_cleanup();
+    printf("\n[ChatRND] Caught signal %d. Exiting.\n", sig);
+    exit(0);
+}
+
+int main(int argc, char *argv[])
+{
+    printf("[ChatRND] Starting daemon...\n");
+
+    // Optional: Uncomment when stable
+    // if (daemon(0, 0) < 0)
+    // {
+    //     perror("[Daemon] Failed to daemonize.");
+    //     exit(EXIT_FAILURE);
+    // }
+
+    signal(SIGINT, handle_signal);
+    signal(SIGTERM, handle_signal);
+
+    printf("[ChatRND] Daemon started. Listening on port %d...\n", SERVER_PORT);
+
+    ipc_init();
+    ipc_command_loop();
 
     pthread_t server_thread;
-    pthread_create(&server_thread, NULL, server_listen, NULL);
+    if (pthread_create(&server_thread, NULL, server_listen, NULL) != 0)
+    {
+        perror("[Daemon] Failed to start server thread!");
+        exit(EXIT_FAILURE);
+    }
+    pthread_detach(server_thread);
 
-    pthread_exit(NULL);
+    while (1)
+        pause();
+
+    return 0;
 }

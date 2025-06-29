@@ -1,8 +1,8 @@
-#include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
-
-#define MAX_PENDING 20
+#include <string.h>
+#include <pthread.h>
+#include "pending.h"
+#include "../include/common.h"
 
 typedef struct
 {
@@ -12,66 +12,74 @@ typedef struct
 
 static PendingConn pending[MAX_PENDING];
 static int pending_count = 0;
+static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 void pending_add(const char *username, int sock)
 {
-    for (int i = 0; i < pending_count; ++i)
+    if (!username || username[0] == '\0')
+    {
+        printf("[Pending.c] Rejecting empty username!\n");
+        return;
+    }
+
+    pthread_mutex_lock(&lock);
+    for (int i = 0; i < pending_count; i++)
     {
         if (strcmp(pending[i].username, username) == 0)
         {
-            printf("[Pending] Already pending username '%s' ignored.\n", username);
+            pending[i].sock = sock;
+            pthread_mutex_unlock(&lock);
+            printf("[Pending.c] Updated existing pending request for %s.\n", username);
             return;
         }
     }
 
     if (pending_count < MAX_PENDING)
     {
-        strncpy(pending[pending_count].username, username, sizeof(pending[pending_count].username));
+        snprintf(pending[pending_count].username, sizeof(pending[pending_count].username), "%s", username);
         pending[pending_count].sock = sock;
         pending_count++;
-
-        printf("[Pending] Added pending user: %s (Socket=%d)\n", username, sock);
+        printf("[Pending.c] Added new pending request for %s.\n", username);
     }
     else
     {
-        printf("[Pending] Too many pending connections\n");
+        printf("[Pending.c] Pending queue full. Could not add %s!\n", username);
     }
+    pthread_mutex_unlock(&lock);
 }
 
 int pending_get(const char *username)
 {
-    printf("\n[Pending] Looking for pending user: %s\n", username);
-
-    for (int i = 0; i < pending_count; ++i)
+    pthread_mutex_lock(&lock);
+    for (int i = 0; i < pending_count; i++)
     {
         if (strcmp(pending[i].username, username) == 0)
         {
             int sock = pending[i].sock;
-
-            for (int j = i; j < pending_count - 1; ++j)
-            {
-                pending[j] = pending[j + 1];
-            }
-            pending_count--;
+            pending[i] = pending[--pending_count];
+            pthread_mutex_unlock(&lock);
+            printf("[Pending.c] Found and removed request for %s.\n", username);
             return sock;
         }
     }
+    pthread_mutex_unlock(&lock);
     return -1;
 }
 
-void pending_list()
+void pending_list(void)
 {
+    pthread_mutex_lock(&lock);
     if (pending_count == 0)
     {
-        printf("No users are waiting.\n");
-        return;
+        printf("[Pending.c] No pending requests.\n");
     }
-
-    printf("%d user(s) waiting to chat:\n", pending_count);
-    for (int i = 0; i < pending_count; ++i)
+    else
     {
-        printf("  • %s\n", pending[i].username);
+        printf("[Pending.c] %d pending request%s:\n", pending_count, pending_count > 1 ? "s" : "");
+        for (int i = 0; i < pending_count; i++)
+        {
+            printf("  • %s\n", pending[i].username);
+        }
     }
-    printf("\n");
-    return;
+    pthread_mutex_unlock(&lock);
 }
