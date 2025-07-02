@@ -3,7 +3,7 @@
 #include <string.h>
 #include "config.h"
 
-#define CONFIG_FILE "../.config"
+#define CONFIG_FILE ".config"
 #define MAX_LINE 128
 
 int get_user_address(const char *username, char *ip_out, int *port_out)

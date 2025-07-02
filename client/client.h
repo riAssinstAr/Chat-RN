@@ -4,5 +4,6 @@
 void initiate_connection(const char *);
 void pending_list(void);
 void accept_session(const char *user);
+void decline_session(const char *user);
 
 #endif

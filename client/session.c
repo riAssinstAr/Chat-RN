@@ -27,19 +27,14 @@ void *receive_loop(void *arg)
             else
             {
                 printf("\033[F\033[2K\033[1;31m[Connection closed by peer.]\033[0m\n");
+                shutdown(c->sock, SHUT_RDWR);
                 return NULL;
             }
             break;
         }
-
         buf[n] = '\0';
-        // Clear current input line
         printf("\r\033[K");
-
-        // Print the incoming message
         printf("\033[1;34m[%s]\033[0m: %s\n", c->username, buf);
-
-        // Redraw the input prompt
         printf("\033[1;32m[You]\033[0m: ");
         fflush(stdout);
     }
@@ -62,7 +57,7 @@ void *send_loop(void *arg)
 
         buf[strcspn(buf, "\n")] = '\0';
 
-        if (strcmp(buf, "quit") == 0)
+        if (strcmp(buf, "/quit") == 0)
         {
             shutdown(sock, SHUT_RDWR);
             break;

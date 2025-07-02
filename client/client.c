@@ -91,8 +91,22 @@ void initiate_connection(const char *user)
         return;
     }
 
-    printf("[Client.c] Connected to %s. Starting chat session...\n", user);
-    start_chat_session(s, user);
+    printf("[Client.c] Waiting for confirmation from peer...\n");
+    char confirm[32] = {0};
+    ssize_t n = recv(s, confirm, sizeof(confirm) - 1, 0);
+    if (n <= 0 || strncmp(confirm, "ACCEPT", strlen("ACCEPT")) != 0)
+    {
+        fprintf(stderr, "[Client.c] Connection not accepted by peer.\n");
+        close(s);
+        return;
+    }
+    else
+    {
+        printf("[Client.c] Connection accepted by %s. Starting chat...\n", user);
+        start_chat_session(s, user);
+        close(s);
+    }
+    return;
 }
 
 void accept_session(const char *user)
@@ -107,9 +121,9 @@ void accept_session(const char *user)
         exit(1);
     }
 
-    char cmd[128];
-    snprintf(cmd, sizeof(cmd), "accept %s", user);
-    send(sock, cmd, strlen(cmd), 0);
+    char cmnd[128];
+    snprintf(cmnd, sizeof(cmnd), "-a %s", user);
+    send(sock, cmnd, strlen(cmnd), 0);
 
     int chat_sock = recv_fd(sock);
     if (chat_sock < 0)
@@ -120,5 +134,41 @@ void accept_session(const char *user)
     }
 
     close(sock);
+    const char *confirm = "ACCEPT\n";
+    send(chat_sock, confirm, strlen(confirm), 0);
     start_chat_session(chat_sock, user);
+    close(chat_sock);
+    return;
+}
+
+void decline_session(const char *user)
+{
+    int sock = socket(AF_UNIX, SOCK_STREAM, 0);
+    struct sockaddr_un addr = {.sun_family = AF_UNIX};
+    strncpy(addr.sun_path, "/tmp/chatrn.sock", sizeof(addr.sun_path) - 1);
+
+    if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    {
+        perror("[Client.c] Socket connection failed!");
+        exit(1);
+    }
+
+    char cmnd[128];
+    snprintf(cmnd, sizeof(cmnd), "-d %s", user);
+    send(sock, cmnd, strlen(cmnd), 0);
+
+    int chat_sock = recv_fd(sock);
+    if (chat_sock < 0)
+    {
+        fprintf(stderr, "[Client.c] Failed to receive chat socket!\n");
+        close(sock);
+        return;
+    }
+
+    close(sock);
+    const char *decline = "DECLINE\n";
+    send(chat_sock, decline, strlen(decline), 0);
+    close(chat_sock);
+    printf("[Client.c] Declined session request from %s.\n", user);
+    return;
 }
