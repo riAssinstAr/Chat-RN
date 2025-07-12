@@ -14,7 +14,6 @@ int get_user_address(const char *username, char *ip_out, int *port_out)
         return -1;
     }
 
-    printf("[Config.c] Retrieving address for user %s.\n", username);
     FILE *file = fopen(CONFIG_FILE, "r");
     if (!file)
         return -1;

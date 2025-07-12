@@ -93,14 +93,14 @@ void initiate_connection(const char *user)
     buf[n] = '\0';
 
     // Check conformation from peer
-    if (strcmp(buf, "ACCEPT\n") == 0)
+    if (strncmp(buf, "ACCEPT", 6) == 0)
     {
         printf("[Client.c] Peer accepted the connection.\n");
         printf("[Client.c] Starting chat session with %s...\n", user);
 
         start_chat_session(chat_sock, user);
     }
-    else if (strcmp(buf, "DECLINE\n") == 0)
+    else if (strncmp(buf, "DECLINE", 7) == 0)
     {
         printf("[Client.c] Peer declined the connection!\n");
         return;

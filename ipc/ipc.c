@@ -90,7 +90,7 @@ void *ipc_command_loop_thread(void *_)
         buf[len] = '\0';
         printf("[IPC] Received: %s request!\n", buf);
 
-        if (strncmp(buf, "-a ", 3) == 0 || strncmp(buf, "-d", 3) == 0)
+        if (strncmp(buf, "-a ", 3) == 0 || strncmp(buf, "-d ", 3) == 0)
         {
             const char *user = buf + 3;
             int sock = pending_get(user);
