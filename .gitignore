@@ -1,7 +1,6 @@
 .vscode/
 /build/
 /bin/
-/ui/
 /*.o
 /*.out
 /*.log

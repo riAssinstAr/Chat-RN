@@ -71,7 +71,7 @@ void pending_list(void)
     pthread_mutex_lock(&lock);
     if (pending_count == 0)
     {
-        printf("[Pending.c] No pending requests.\n");
+        printf("[Pending.c] No pending requests!\n");
     }
     else
     {

@@ -1,11 +1,11 @@
-#include <sys/socket.h>
+#include <errno.h>
+#include <stdio.h>
 #include <sys/un.h>
 #include <unistd.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
-#include <errno.h>
+#include <sys/socket.h>
 #include "ipc.h"
 #include "pending.h"
 
@@ -81,18 +81,16 @@ void *ipc_command_loop_thread(void *_)
 
         char buf[256];
         buf[sizeof(buf) - 1] = '\0';
-
         ssize_t len = recv(client, buf, sizeof(buf) - 1, 0);
         if (len <= 0)
         {
             close(client);
             continue;
         }
-
         buf[len] = '\0';
         printf("[IPC] Received: %s request!\n", buf);
 
-        if (strncmp(buf, "-a ", 3) == 0 || strcmp(buf, "-d") == 0)
+        if (strncmp(buf, "-a ", 3) == 0 || strncmp(buf, "-d", 3) == 0)
         {
             const char *user = buf + 3;
             int sock = pending_get(user);
@@ -103,9 +101,7 @@ void *ipc_command_loop_thread(void *_)
                 close(client);
                 continue;
             }
-
             send_fd(client, sock);
-            close(sock);
         }
         else
         {

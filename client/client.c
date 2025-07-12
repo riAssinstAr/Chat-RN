@@ -1,15 +1,14 @@
 #include <stdio.h>
+#include <netdb.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/un.h>
-#include <arpa/inet.h>
 #include <string.h>
-#include <netdb.h>
+#include <arpa/inet.h>
 #include "client.h"
 #include "config.h"
 #include "pending.h"
 #include "session.h"
-#include "../include/common.h"
 
 static int recv_fd(int socket)
 {
@@ -57,118 +56,109 @@ void initiate_connection(const char *user)
         return;
     }
 
-    int s = socket(AF_INET, SOCK_STREAM, 0);
-    if (s < 0)
-    {
-        perror("[Client.c] Socket creation failed!");
-        return;
-    }
-
+    int chat_sock = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in a = {
         .sin_family = AF_INET,
         .sin_port = htons(port)};
-
     if (inet_pton(AF_INET, ip, &a.sin_addr) <= 0)
     {
-        perror("[Client.c] Invalid IP address!");
-        close(s);
+        perror("[Client.c] Socket inet_pton failed!");
+        close(chat_sock);
         return;
     }
-    if (connect(s, (struct sockaddr *)&a, sizeof(a)) < 0)
+    if (connect(chat_sock, (struct sockaddr *)&a, sizeof(a)) < 0)
     {
-        perror("[Client.c] Socket connection failed!");
-        close(s);
+        perror("[Client.c] Socket connect failed!");
+        close(chat_sock);
         return;
     }
 
-    const char *username = getlogin();
+    const char *username = getenv("USER");
     if (!username)
-        username = "userx";
-    if (send(s, username, strlen(username) + 1, 0) < 0)
     {
-        perror("[Client.c] Failed to send your username!");
-        close(s);
-        return;
+        username = "Peer";
+        printf("[Client.c] getlogin() failed, sendning username 'Peer'!\n");
     }
-
+    send(chat_sock, username, strlen(username) + 1, 0);
     printf("[Client.c] Waiting for confirmation from peer...\n");
-    char confirm[32] = {0};
-    ssize_t n = recv(s, confirm, sizeof(confirm) - 1, 0);
-    if (n <= 0 || strncmp(confirm, "ACCEPT", strlen("ACCEPT")) != 0)
+
+    char buf[8];
+    ssize_t n = recv(chat_sock, buf, sizeof(buf) - 1, 0);
+    if (n <= 0)
     {
-        fprintf(stderr, "[Client.c] Connection not accepted by peer.\n");
-        close(s);
+        perror("[Client.c] Socket recv failed!");
+        close(chat_sock);
         return;
     }
-    else
+    buf[n] = '\0';
+
+    // Check conformation from peer
+    if (strcmp(buf, "ACCEPT\n") == 0)
     {
-        printf("[Client.c] Connection accepted by %s. Starting chat...\n", user);
-        start_chat_session(s, user);
-        close(s);
+        printf("[Client.c] Peer accepted the connection.\n");
+        printf("[Client.c] Starting chat session with %s...\n", user);
+
+        start_chat_session(chat_sock, user);
     }
-    return;
+    else if (strcmp(buf, "DECLINE\n") == 0)
+    {
+        printf("[Client.c] Peer declined the connection!\n");
+        return;
+    }
+    close(chat_sock);
 }
 
 void accept_session(const char *user)
 {
-    int sock = socket(AF_UNIX, SOCK_STREAM, 0);
+    int unix_sock = socket(AF_UNIX, SOCK_STREAM, 0);
     struct sockaddr_un addr = {.sun_family = AF_UNIX};
     strncpy(addr.sun_path, "/tmp/chatrn.sock", sizeof(addr.sun_path) - 1);
-
-    if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-    {
-        perror("[Client.c] Socket connection failed!");
-        exit(1);
-    }
+    connect(unix_sock, (struct sockaddr *)&addr, sizeof(addr));
 
     char cmnd[128];
     snprintf(cmnd, sizeof(cmnd), "-a %s", user);
-    send(sock, cmnd, strlen(cmnd), 0);
+    send(unix_sock, cmnd, strlen(cmnd), 0);
+    int chat_sock = recv_fd(unix_sock);
+    close(unix_sock);
 
-    int chat_sock = recv_fd(sock);
-    if (chat_sock < 0)
+    // Send confirmation to the peer
+    const char *confirmation = "ACCEPT\n";
+    if (send(chat_sock, confirmation, strlen(confirmation), 0) < 0)
     {
-        fprintf(stderr, "[Client.c] Failed to receive chat socket!\n");
-        close(sock);
+        perror("[Client.c] Socket send failed!");
+        close(chat_sock);
         return;
     }
 
-    close(sock);
-    const char *confirm = "ACCEPT\n";
-    send(chat_sock, confirm, strlen(confirm), 0);
+    printf("[Client.c] Accepted session request from %s.\n", user);
+    printf("[Client.c] Starting chat session with %s...\n", user);
+
     start_chat_session(chat_sock, user);
     close(chat_sock);
-    return;
 }
 
 void decline_session(const char *user)
 {
-    int sock = socket(AF_UNIX, SOCK_STREAM, 0);
+    int unix_sock = socket(AF_UNIX, SOCK_STREAM, 0);
     struct sockaddr_un addr = {.sun_family = AF_UNIX};
     strncpy(addr.sun_path, "/tmp/chatrn.sock", sizeof(addr.sun_path) - 1);
-
-    if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-    {
-        perror("[Client.c] Socket connection failed!");
-        exit(1);
-    }
+    connect(unix_sock, (struct sockaddr *)&addr, sizeof(addr));
 
     char cmnd[128];
     snprintf(cmnd, sizeof(cmnd), "-d %s", user);
-    send(sock, cmnd, strlen(cmnd), 0);
+    send(unix_sock, cmnd, strlen(cmnd), 0);
+    int chat_sock = recv_fd(unix_sock);
+    close(unix_sock);
 
-    int chat_sock = recv_fd(sock);
-    if (chat_sock < 0)
+    // Send confirmation to the peer
+    const char *confirmation = "DECLINE\n";
+    if (send(chat_sock, confirmation, strlen(confirmation), 0) < 0)
     {
-        fprintf(stderr, "[Client.c] Failed to receive chat socket!\n");
-        close(sock);
+        perror("[Client.c] Socket send failed!");
+        close(chat_sock);
         return;
     }
 
-    close(sock);
-    const char *decline = "DECLINE\n";
-    send(chat_sock, decline, strlen(decline), 0);
     close(chat_sock);
     printf("[Client.c] Declined session request from %s.\n", user);
-    return;
 }

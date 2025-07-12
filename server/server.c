@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <arpa/inet.h>
 #include <pthread.h>
+#include <arpa/inet.h>
 #include "server.h"
 #include "pending.h"
 #include "../include/common.h"
@@ -16,7 +16,7 @@ void *handle_incoming(void *arg)
     ssize_t n = recv(client_sock, peer_name, sizeof(peer_name) - 1, 0);
     if (n <= 0)
     {
-        perror("[Server.c] Socket recv failed.");
+        perror("[Server.c] Socket recv failed!");
         close(client_sock);
         return NULL;
     }

@@ -1,17 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
 #include <unistd.h>
 #include <signal.h>
+#include <pthread.h>
 #include "ipc.h"
-#include "server/server.h"
+#include "server.h"
 #include "include/common.h"
 
 void handle_signal(int sig)
 {
     ipc_cleanup();
-    printf("\n[ChatRND] Caught signal %d. Exiting.\n", sig);
+    printf("\n[ChatRND] Caught signal. Exiting.\n");
     exit(0);
 }
 
@@ -19,7 +19,6 @@ int main(int argc, char *argv[])
 {
     printf("[ChatRND] Starting daemon...\n");
 
-    // Optional: Uncomment when stable
     // if (daemon(0, 0) < 0)
     // {
     //     perror("[Daemon] Failed to daemonize.");

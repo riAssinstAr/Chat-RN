@@ -6,7 +6,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # === Include Directories ===
 include_directories(
-    common
+    include
     client
     server
     ipc
@@ -22,7 +22,7 @@ file(GLOB IPC_SRC ipc/*.c)
 add_executable(chatrn
     chatrn.c
     ${SERVER_SRC}
-    ${COMMON_SRC}
+    ${INCLUDE_SRC}
     ${CLIENT_SRC}
     ${IPC_SRC}
 )
@@ -31,7 +31,7 @@ add_executable(chatrn
 add_executable(chatrnd
     chatrnd.c
     ${SERVER_SRC}
-    ${COMMON_SRC}
+    ${INCLUDE_SRC}
     ${CLIENT_SRC}
     ${IPC_SRC}
 )
