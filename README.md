@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.png" alt="ChatRN Logo" height=""/>
+  <img src="logo.png" alt="ChatRN Logo" height="150"/>
 </p>
 
 <h1 align="center">CHATRN</h1>
