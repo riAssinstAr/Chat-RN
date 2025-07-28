@@ -15,7 +15,6 @@ include_directories(
 # === Source Files ===
 file(GLOB CLIENT_SRC client/*.c)
 file(GLOB SERVER_SRC server/*.c)
-file(GLOB COMMON_SRC common/*.c)
 file(GLOB IPC_SRC ipc/*.c)
 
 # === Client CLI Binary ===

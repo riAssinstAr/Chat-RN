@@ -5,7 +5,7 @@
 #include <arpa/inet.h>
 #include "server.h"
 #include "pending.h"
-#include "../include/common.h"
+#include "common.h"
 
 void *handle_incoming(void *arg)
 {

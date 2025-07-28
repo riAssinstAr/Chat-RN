@@ -6,7 +6,7 @@
 #include <pthread.h>
 #include "ipc.h"
 #include "server.h"
-#include "include/common.h"
+#include "common.h"
 
 void handle_signal(int sig)
 {

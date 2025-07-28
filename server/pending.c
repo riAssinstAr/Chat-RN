@@ -2,7 +2,7 @@
 #include <string.h>
 #include <pthread.h>
 #include "pending.h"
-#include "../include/common.h"
+#include "common.h"
 
 typedef struct
 {
